@@ -29,8 +29,13 @@ CIMIS Units:
     Soil Temp (STemp) = deg C
 """
 
-#Define G (10% of Rn) - in W m-2
-G = np.array(df['SRad']*0.1)
+#Define G (10% of Rn) - in W m-2 - during the day 
+G = np.empty(len(df))
+for i in range(len(df)):
+    if(df['SRad'][i]) > 0:
+        G[i] = np.array(df['SRad'][i]*0.1)
+    else:
+        G[i] = np.array(df['SRad'][i]*0.5)
 
 #constants (depending on the surface): 
 Rd = 287.   #gas constant for dry air 
@@ -60,7 +65,7 @@ delta1 = le.del_solve(df['Tair'])
 delta2 = le.del_solve_2nd(df['Tair'])
 
 #solve ETo with first order PM (answer in mm): 
-ETo_1 = le.ETo_calc(df['SRad'], G, df['Ea'], df['WS'], df['Tair'], z)
+ETo_1 = le.ETo_calc(df['SRad'], G, df['Ea'], df['WS'], df['Tair'], Ra, Rc, z)
 
 #calculate surface temperature
 Ts = le.poly_solve(df['Tair'], df['SRad'], G, es, df['Ea'], Ra, Rc, z) + df['Tair']

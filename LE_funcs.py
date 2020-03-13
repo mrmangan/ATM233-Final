@@ -16,7 +16,7 @@ def lamba_calc(Ta):
     return(lamda)
     
 def pressure_calc(z):
-    P = ((101.3*(293-0.0065*z))/293)**5.26 #kPa
+    P = 101.3*((293-0.0065*z)/293)**5.26 #kPa
     return(P)
     
 def gamma_calc(Ta, z):
@@ -26,11 +26,11 @@ def gamma_calc(Ta, z):
     return(gamma)
     
 def ro_calc(z, Ta):
-    Rd = 287e-6   #gas constant for dry air in MJ kg-1 K-1
-    P = pressure_calc(z)  #in kPa
+    Rd = 287   #gas constant for dry air in J kg-1 K-1
+    P = pressure_calc(z)*1000  #in Pa
     Tv = (1.01)*(Ta+273.15)  #in K
-    ro = P/(Tv*Rd)  #kPa/ (MJ kg-1)
-    return(ro)
+    ro = P/(Tv*Rd)  #Pa/ (MJ kg-1) = 
+    return(ro)  #in kg/m3
     
 def sat_vapor(Ta):
     es = 0.6108*np.exp((17.27*Ta)/(Ta+237.3))  #kPa
@@ -48,34 +48,51 @@ def del_solve_2nd(Ta):
     delta2 = es* (a*(a - 2*Ta - b))/(Ta + 237.3)**4 
     return(delta2)
 
-def ETo_calc(Rn, G, ea, U, Ta, z):
+def ETo_calc(Rn, G, ea, U, Ta, Ra, Rc, z):
     es = sat_vapor(Ta)
-    Cd = 24
+    #split the Cd and Cn by day and night:
+    Cd = np.empty(len(Rn))
+    for i in range(len(Rn)):
+        if(Rn[i]) > 0:
+            Cd[i] = 0.24
+        else:
+            Cd[i] = 0.96
     Cn = 37
     gamma = gamma_calc(Ta, z)
     delta = del_solve(Ta)
     lamda = lamba_calc(Ta)  #in MJ kg-1
+    #ro = ro_calc(z, Ta)
     
     #convert Rn and G into MJ m-2 hr-1
     Rn = MJ_conv(Rn)
     G = MJ_conv(G)
     
-    bot = delta + (gamma*(1+Cd*U))
-    top2 = (gamma*Cn) / (Ta+273.15)
+    a = delta*(Rn-G)
+    c = gamma * (Cn / (Ta+273.15)) * U *(es - ea)
+    d = delta + gamma*(1 + Cd*U)
     
-    ETo = (delta*(Rn-G))/(lamda*(bot)) + (top2*U*(es - ea))/(bot)
+    #bot = delta + (gamma*(1+Cd*U))
+    #top2 = (gamma*Cn) / (Ta+273.15)
+    
+    #ETo = (delta*(Rn-G))/(lamda*(bot)) + (top2*U*(es - ea))/(bot)
+    ETo = a/(lamda*d) + c/d
+    
     return(ETo)
+    
 
 def ETo_calc_2(Ta, Ts, ea, Rc, Ra, z, Cp):
     """
     This calculates the LE based on the LE equation. 
+    Ingnore CIMIS units - and use SI units
     """
-    es = sat_vapor(Ts)  #saturation vapor pressure of the surface
-    ro = ro_calc(z, Ta)
-    lamba = lamba_calc(Ta)   #latent heat of vaporaization (MJ kg-1)
+    es = sat_vapor(Ts)  #saturation vapor pressure of the surface (Pa)
+    ro = ro_calc(z, Ta)      #kg m-3
+    #lamba = lamba_calc(Ta)   #latent heat of vaporaization (MJ kg-1)
+    gamma = gamma_calc(Ta, z)
+    #gamma = 66   #Pa K-1
     grad = es - ea  #gradident
     
-    ETo2 = ro*Cp/lamba * (grad/(Rc + Ra))
+    ETo2 = 0.408* ro*Cp/gamma * (grad/(Rc + Ra)) 
     return(ETo2)
     
 def poly_solve(Ta, Rn, G, es, ea, Ra, Rc, z):
@@ -91,8 +108,8 @@ def poly_solve(Ta, Rn, G, es, ea, Ra, Rc, z):
         z = height of measurement 
     """
     #constants: 
-    Cp = 1004.67  #specific heat of air
-
+    Cp = 1.013e-3  #specific heat of air (MJ kg-1 C-1)
+ 
     ro = ro_calc(Ta, z)
     gamma = gamma_calc(Ta, z)
     
