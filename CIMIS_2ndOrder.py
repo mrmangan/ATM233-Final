@@ -37,13 +37,17 @@ for i in range(len(df)):
         G[i] = np.array(df['SRad'][i]*0.1)
     else:
         G[i] = np.array(df['SRad'][i]*0.5)
-
+df.insert(11, "G", G)
 #constants (depending on the surface): 
 Rd = 287.   #gas constant for dry air 
 Cp = 1013  #specific heat of air (J kg-1 C-1)
 h = 0.12    #canopy height in meters
 kap = 0.41   #von Karman coefficent
 z = 2       #station height [m]
+
+#Calculate CIMIS H and LE
+df.insert(12, "LE_CIMIS", le.LE_calc(df['ETo']))
+df.insert(13, "H_CIMIS", le.H_calc(df['LE_CIMIS'], df['SRad'], G))
 
 #Aerodynamic Residance - option to improve
 d = (2/3)*h  #displacement height
@@ -67,21 +71,26 @@ delta2 = le.del_solve_2nd(df['Tair'])
 
 #solve ETo with first order PM (answer in mm): 
 ETo_1 = le.ETo_calc(df['SRad'], G, df['Ea'], df['WS'], df['Tair'], Ra, Rc, z)
+LE_1 = le.LE_calc(ETo_1)
+H_1 = le.H_calc(LE_1, df['SRad'], G)
 
 #calculate surface temperature
 Ts = le.poly_solve(df['Tair'], df['SRad'], G, es, df['Ea'], Ra, Rc, z) + df['Tair']
 
 #solve ETo for the second order approximation
 ETo_2 = le.ETo_calc_2(df['Tair'], Ts, df['Ea'], Rc, Ra, z, Cp)
-ET_test = le.ETo_calc_2(df['Tair'], df['STemp'], df['Ea'], Rc, Ra, z, Cp)
-
+LE_2 = le.LE_calc(ETo_2)
+H_2 = le.H_calc(LE_2, df['SRad'], G)
 
 #Make the output data frame: 
 df_out = pd.DataFrame(df)
-df_out.insert(11, "G", G)
-df_out.insert(12, "T_surf", Ts)
-df_out.insert(13, "ETo_1PM", ETo_1)
-df_out.insert(14, "ETo_2PM", ETo_2)
+df_out.insert(14, "LE_1", LE_1)
+df_out.insert(15, "H_1", H_1)
+df_out.insert(16, "LE_2", LE_2)
+df_out.insert(17, "H_2", H_2)
+df_out.insert(18, "T_surf", Ts)
+df_out.insert(19, "ETo_1PM", ETo_1)
+df_out.insert(20, "ETo_2PM", ETo_2)
 
 #Make output CSV
 df_out.to_csv(mrm_path_out)
@@ -140,6 +149,32 @@ plt.legend(loc = 0)
 plt.grid()
 plt.show()
 
+#plot full EB
+plt.plot(df_out['SRad'][4319:(4319+48)], label = 'Rad', color = 'black')
+plt.plot(df_out['LE_1'][4319:(4319+48)], label = 'LE', color = 'blue')
+plt.plot(df_out['H_1'][4319:(4319+48)],label = 'H', color = 'red')
+plt.plot(df_out['G'][4319:(4319+48)], label = 'G', color = 'brown')
+plt.ylabel('W m-2')
+plt.legend(loc = 0)
+plt.title('Full Energy Budget (1st Order)')
+plt.show()
 
-#Diagnositic plots
-#plt.plot(df['TIMESTAMP'], ETo2)
+plt.plot(df_out['SRad'][4319:(4319+48)], label = 'Rad', color = 'black')
+plt.plot(df_out['LE_2'][4319:(4319+48)], label = 'LE', color = 'blue')
+plt.plot(df_out['H_2'][4319:(4319+48)],label = 'H', color = 'red')
+plt.plot(df_out['G'][4319:(4319+48)], label = 'G', color = 'brown')
+plt.ylabel('W m-2')
+plt.legend(loc = 0)
+plt.title('Full Energy Budget (2nd Order)')
+plt.show()
+
+plt.plot(df_out['SRad'][4319:(4319+48)], label = 'Rad', color = 'black')
+plt.plot(df_out['LE_CIMIS'][4319:(4319+48)], label = 'LE', color = 'blue')
+plt.plot(df_out['H_CIMIS'][4319:(4319+48)],label = 'H', color = 'red')
+plt.plot(df_out['G'][4319:(4319+48)], label = 'G', color = 'brown')
+plt.ylabel('W m-2')
+plt.legend(loc = 0)
+plt.title('Full Energy Budget (CIMIS)')
+plt.show()
+
+
