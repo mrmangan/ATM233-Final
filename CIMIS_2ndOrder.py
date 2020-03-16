@@ -12,8 +12,9 @@ import LE_funcs as le
 
 #import the CIMIS data
 #specify path to the corrected cimis station data- based on MRM file path:
-mrm_path = 'G:/My Drive/Classes/ATM 233/ATM233 Final/Data/CIMIS/davis_hourly_2019.csv'
-df = pd.read_csv(mrm_path)
+mrm_path_out = "G:/My Drive/Classes/ATM 233/ATM233 Final/Data/CIMIS/Calc/Davis_EB_2019.csv"
+mrm_path_in = 'G:/My Drive/Classes/ATM 233/ATM233 Final/Data/CIMIS/davis_hourly_2019.csv'
+df = pd.read_csv(mrm_path_in)
 
 """
 CIMIS Units: 
@@ -39,7 +40,7 @@ for i in range(len(df)):
 
 #constants (depending on the surface): 
 Rd = 287.   #gas constant for dry air 
-Cp = 1.013e-3  #specific heat of air (MJ kg-1 C-1)
+Cp = 1013  #specific heat of air (J kg-1 C-1)
 h = 0.12    #canopy height in meters
 kap = 0.41   #von Karman coefficent
 z = 2       #station height [m]
@@ -74,9 +75,22 @@ Ts = le.poly_solve(df['Tair'], df['SRad'], G, es, df['Ea'], Ra, Rc, z) + df['Tai
 ETo_2 = le.ETo_calc_2(df['Tair'], Ts, df['Ea'], Rc, Ra, z, Cp)
 ET_test = le.ETo_calc_2(df['Tair'], df['STemp'], df['Ea'], Rc, Ra, z, Cp)
 
+
+#Make the output data frame: 
+df_out = pd.DataFrame(df)
+df_out.insert(11, "G", G)
+df_out.insert(12, "T_surf", Ts)
+df_out.insert(13, "ETo_1PM", ETo_1)
+df_out.insert(14, "ETo_2PM", ETo_2)
+
+#Make output CSV
+df_out.to_csv(mrm_path_out)
+
+
+#############################################################################
 #Diagnositics (can be commented out when code is correct)
 test_ETo_PM = ETo_1 - df['ETo']   #the difference between our and CIMIS PM ETo
-test_Ts = Ts- df['STemp']
+test_Ts = Ts- df['Tair']
 
 plt.plot(test_ETo_PM[4319:(4319+48)])
 plt.title('Calc ETo - CIMIS ETo')
@@ -84,19 +98,17 @@ plt.ylabel('mm')
 plt.show()
 
 plt.plot(test_Ts[4319:(4319+48)])
-plt.title('Calc Ts - CIMIS Ts')
+plt.title('Calc Ts - Air Temp')
 plt.ylabel('Deg C')
 plt.show()
 
 
 plt.plot( df['ETo'][4319:(4319+48)], label = 'CIMIS ETo', color = 'red')
-plt.plot(ETo_2[4319:(4319+48)], label = '2nd order', color = 'blue')
+plt.plot( ETo_2[4319:(4319+48)], label = '2nd order', color = 'blue')
 plt.plot(ETo_1[4319:(4319+48)], label = '1st order', color = 'green')
 plt.title('All ETo')
-plt.ylabel('mm')
+plt.ylabel('mm hr-1')
 plt.legend()
 plt.show()
 #Diagnositic plots
 #plt.plot(df['TIMESTAMP'], ETo2)
-
-#Make the output data frame: 

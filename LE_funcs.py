@@ -7,8 +7,8 @@ Has the function for the saturation vapor pressure solver.
 import numpy as np
 
 def MJ_conv(x):
-    #takes either Rn or G and converts from W m-2 to MJ m-2
-    x = x*1e-6  
+    #takes either Rn or G and converts from W m-2 to MJ m-2 hr-1
+    x = 1e-6*x*3600   
     return(x)
 
 def lamba_calc(Ta):
@@ -85,15 +85,18 @@ def ETo_calc_2(Ta, Ts, ea, Rc, Ra, z, Cp):
     This calculates the LE based on the LE equation. 
     Ingnore CIMIS units - and use SI units
     """
-    es = sat_vapor(Ts)  #saturation vapor pressure of the surface (Pa)
+    es = sat_vapor(Ts)  #saturation vapor pressure of the surface (kPa)
     ro = ro_calc(z, Ta)      #kg m-3
     #lamba = lamba_calc(Ta)   #latent heat of vaporaization (MJ kg-1)
     gamma = gamma_calc(Ta, z)
     #gamma = 66   #Pa K-1
     grad = es - ea  #gradident
     
-    ETo2 = 0.408* ro*Cp/gamma * (grad/(Rc + Ra)) 
-    return(ETo2)
+    ETo2 = ro*Cp/gamma * (grad/(Rc + Ra))  #in W m-2
+    ETo2 = MJ_conv(ETo2) #convert from W m-2 to MJ  m-2 hr-1
+    ETo2 = ETo2*0.408  #convert to mm hr-1
+    
+    return(ETo2)  #in mm hr-1
     
 def poly_solve(Ta, Rn, G, es, ea, Ra, Rc, z):
     """
@@ -106,9 +109,11 @@ def poly_solve(Ta, Rn, G, es, ea, Ra, Rc, z):
         Rc = canopy resistance
         Ra = aerodynamic resistance
         z = height of measurement 
+        
+        NOTE: This is not working during the day.  The night values seem reasonable. 
     """
     #constants: 
-    Cp = 1.013e-3  #specific heat of air (MJ kg-1 C-1)
+    Cp = 1013  #specific heat of air (J kg-1 C-1)
  
     ro = ro_calc(Ta, z)
     gamma = gamma_calc(Ta, z)
@@ -129,3 +134,19 @@ def poly_solve(Ta, Rn, G, es, ea, Ra, Rc, z):
 
     return(sol1)
     
+#def CIMIS(ea, RH, Rs, Ta, U, z):
+#    alf = 0.3  #what do they use?
+#    Tk = Ta + 273.15
+#    es = sat_vapor(Ta)
+#    VPD = es - ea
+#    DEL = del_solve(Ta)
+#    P = 101.3-0.0115*z + 5.44e-7 *z**2
+#    GAM = 0.000646*(1+0.000946*Ta)*P
+#    W = DEL/(DEL + GAM)
+#    FU2 = np.empty(len(Rs))
+#    for i in range(len(Rs)):
+#        if(Rn[i]) > 0:
+#            FU2[i] = 0.03 + 0.576*U
+#        else:
+#            FU2[i] = 0.125 + 0.439*U
+#    Rn = (1-alf)
