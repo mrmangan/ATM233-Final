@@ -110,5 +110,36 @@ plt.title('All ETo')
 plt.ylabel('mm hr-1')
 plt.legend()
 plt.show()
+
+#scatter plot
+plt.scatter(df_out['ETo_1PM'], df_out['ETo_2PM'])
+plt.ylabel('1st Order ETo [mm hr-1]')
+plt.xlabel('2nd Order ETo [mm hr-1]')
+plt.title('ETo Calculated')
+plt.plot([0.0, 1.2], [0.0, 1.2], 'k-')
+plt.grid()
+plt.show()
+
+#plt.scatter(df_out['ETo'], df_out['ETo_2PM'])
+#plt.ylabel('CIMIS ETo [mm hr-1]')
+#plt.xlabel('2nd Order ETo [mm hr-1]')
+#plt.show()
+#
+#plt.scatter(df_out['ETo'], df_out['ETo_1PM'])
+#plt.ylabel('CIMIS ETo [mm hr-1]')
+#plt.xlabel('1st Order ETo [mm hr-1]')
+#plt.show()
+
+plt.scatter(df_out['ETo'], df_out['ETo_1PM'], label = '1st Order', color = 'green')
+plt.scatter(df_out['ETo'], df_out['ETo_2PM'], label = '2nd Order', color = 'blue')
+plt.ylabel('CIMIS ETo [mm hr-1]')
+plt.xlabel('Calculated ETo [mm hr-1]')
+plt.title('CIMIS ETo vs Calculated ETo')
+plt.plot([0.0, 1.2], [0.0, 1.2], 'k-')
+plt.legend(loc = 0)
+plt.grid()
+plt.show()
+
+
 #Diagnositic plots
 #plt.plot(df['TIMESTAMP'], ETo2)
