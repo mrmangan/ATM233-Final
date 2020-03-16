@@ -134,6 +134,16 @@ def poly_solve(Ta, Rn, G, es, ea, Ra, Rc, z):
 
     return(sol1)
     
+def LE_calc(ET):
+    ET = ET / 0.408   #convert to MJ m-2 hr-1
+    LE = ET / (1e-6*3600)  #convert to W m-2)
+    return(LE)
+    
+def H_calc(LE, Rn, G):
+    #calculate H by energy budget residual
+    H = Rn - G - LE
+    return(H)
+    
 #def CIMIS(ea, RH, Rs, Ta, U, z):
 #    alf = 0.3  #what do they use?
 #    Tk = Ta + 273.15
