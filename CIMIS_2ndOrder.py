@@ -12,9 +12,15 @@ import LE_funcs as le
 
 #import the CIMIS data
 #specify path to the corrected cimis station data- based on MRM file path:
-mrm_path_out = "G:/My Drive/Classes/ATM 233/ATM233 Final/Data/CIMIS/Calc/Davis_EB_2019.csv"
-mrm_path_in = 'G:/My Drive/Classes/ATM 233/ATM233 Final/Data/CIMIS/Davis_2019_hourly_all.csv'
-df = pd.read_csv(mrm_path_in)
+# mrm_path_out = "G:/My Drive/Classes/ATM 233/ATM233 Final/Data/CIMIS/Calc/Davis_EB_2019.csv"
+# mrm_path_in = 'G:/My Drive/Classes/ATM 233/ATM233 Final/Data/CIMIS/Davis_2019_hourly_all.csv'
+
+# If looking at other stations, change station name and whatever file paths you have
+station = 'ucr'
+mrm_path_in = f"G:/My Drive/ATM233 Final/Data/CIMIS/preproc/{station}_hourly.csv"
+mrm_path_out = f"G:/My Drive/ATM233 Final/Data/CIMIS/Calc/2015_2019_results/{station}_hourly_eb.csv"
+
+df = pd.read_csv(mrm_path_in) 
 
 """
 CIMIS Units: 
@@ -95,8 +101,7 @@ df_out.insert(19, "ETo_1PM", ETo_1)
 df_out.insert(20, "ETo_2PM", ETo_2)
 
 #Make output CSV
-df_out.to_csv(mrm_path_out)
-
+df_out.to_csv(mrm_path_out) 
 
 #############################################################################
 #Diagnositics (can be commented out when code is correct)
