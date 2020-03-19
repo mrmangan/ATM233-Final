@@ -13,7 +13,7 @@ import LE_funcs as le
 #import the CIMIS data
 #specify path to the corrected cimis station data- based on MRM file path:
 mrm_path_out = "G:/My Drive/Classes/ATM 233/ATM233 Final/Data/CIMIS/Calc/Davis_EB_2019.csv"
-mrm_path_in = 'G:/My Drive/Classes/ATM 233/ATM233 Final/Data/CIMIS/davis_hourly_2019.csv'
+mrm_path_in = 'G:/My Drive/Classes/ATM 233/ATM233 Final/Data/CIMIS/Davis_2019_hourly_all.csv'
 df = pd.read_csv(mrm_path_in)
 
 """
@@ -21,6 +21,7 @@ CIMIS Units:
     ETo = mm
     precip = mm
     SolRad = W m-2 -> need to be in MJ m-2 hr-1 to use in the PM equation
+    Rn = Net Radiation W m-2
     vapor pressure (es) = kPa 
     Air temp = deg C
     RH = %
@@ -28,26 +29,27 @@ CIMIS Units:
     Wind speed = m s-1
     Wind dir = deg
     Soil Temp (STemp) = deg C
+    ETo_PM = mm 
 """
 
 #Define G (10% of Rn) - in W m-2 - during the day 
 G = np.empty(len(df))
 for i in range(len(df)):
-    if(df['SRad'][i]) > 0:
-        G[i] = np.array(df['SRad'][i]*0.1)
+    if(df['Rn'][i]) > 0:
+        G[i] = np.array(df['Rn'][i]*0.1)
     else:
-        G[i] = np.array(df['SRad'][i]*0.5)
+        G[i] = np.array(df['Rn'][i]*0.5)
 df.insert(11, "G", G)
 #constants (depending on the surface): 
 Rd = 287.   #gas constant for dry air 
-Cp = 1013  #specific heat of air (J kg-1 C-1)
+Cp = 1013.  #specific heat of air (J kg-1 C-1)
 h = 0.12    #canopy height in meters
 kap = 0.41   #von Karman coefficent
 z = 2       #station height [m]
 
 #Calculate CIMIS H and LE
 df.insert(12, "LE_CIMIS", le.LE_calc(df['ETo']))
-df.insert(13, "H_CIMIS", le.H_calc(df['LE_CIMIS'], df['SRad'], G))
+df.insert(13, "H_CIMIS", le.H_calc(df['LE_CIMIS'], df['Rn'], G))
 
 #Aerodynamic Residance - option to improve
 d = (2/3)*h  #displacement height
@@ -70,17 +72,17 @@ delta1 = le.del_solve(df['Tair'])
 delta2 = le.del_solve_2nd(df['Tair'])
 
 #solve ETo with first order PM (answer in mm): 
-ETo_1 = le.ETo_calc(df['SRad'], G, df['Ea'], df['WS'], df['Tair'], Ra, Rc, z)
+ETo_1 = le.ETo_calc(df['Rn'], G, df['Ea'], df['WS'], df['Tair'], Ra, Rc, z)
 LE_1 = le.LE_calc(ETo_1)
-H_1 = le.H_calc(LE_1, df['SRad'], G)
+H_1 = le.H_calc(LE_1, df['Rn'], G)
 
 #calculate surface temperature
-Ts = le.poly_solve(df['Tair'], df['SRad'], G, es, df['Ea'], Ra, Rc, z) + df['Tair']
+Ts = le.poly_solve(df['Tair'], df['Rn'], G, es, df['Ea'], Ra, Rc, z) + df['Tair']
 
 #solve ETo for the second order approximation
 ETo_2 = le.ETo_calc_2(df['Tair'], Ts, df['Ea'], Rc, Ra, z, Cp)
 LE_2 = le.LE_calc(ETo_2)
-H_2 = le.H_calc(LE_2, df['SRad'], G)
+H_2 = le.H_calc(LE_2, df['Rn'], G)
 
 #Make the output data frame: 
 df_out = pd.DataFrame(df)
@@ -113,6 +115,7 @@ plt.show()
 
 
 plt.plot( df['ETo'][4319:(4319+48)], label = 'CIMIS ETo', color = 'red')
+plt.plot( df['ETo_PM'][4319:(4319+48)], label = 'PM ETo (CIMIS)', color = 'purple')
 plt.plot( ETo_2[4319:(4319+48)], label = '2nd order', color = 'blue')
 plt.plot(ETo_1[4319:(4319+48)], label = '1st order', color = 'green')
 plt.title('All ETo')
@@ -150,7 +153,7 @@ plt.grid()
 plt.show()
 
 #plot full EB
-plt.plot(df_out['SRad'][4319:(4319+48)], label = 'Rad', color = 'black')
+plt.plot(df_out['Rn'][4319:(4319+48)], label = 'Rad', color = 'black')
 plt.plot(df_out['LE_1'][4319:(4319+48)], label = 'LE', color = 'blue')
 plt.plot(df_out['H_1'][4319:(4319+48)],label = 'H', color = 'red')
 plt.plot(df_out['G'][4319:(4319+48)], label = 'G', color = 'brown')
@@ -159,7 +162,7 @@ plt.legend(loc = 0)
 plt.title('Full Energy Budget (1st Order)')
 plt.show()
 
-plt.plot(df_out['SRad'][4319:(4319+48)], label = 'Rad', color = 'black')
+plt.plot(df_out['Rn'][4319:(4319+48)], label = 'Rad', color = 'black')
 plt.plot(df_out['LE_2'][4319:(4319+48)], label = 'LE', color = 'blue')
 plt.plot(df_out['H_2'][4319:(4319+48)],label = 'H', color = 'red')
 plt.plot(df_out['G'][4319:(4319+48)], label = 'G', color = 'brown')
@@ -168,7 +171,7 @@ plt.legend(loc = 0)
 plt.title('Full Energy Budget (2nd Order)')
 plt.show()
 
-plt.plot(df_out['SRad'][4319:(4319+48)], label = 'Rad', color = 'black')
+plt.plot(df_out['Rn'][4319:(4319+48)], label = 'Rad', color = 'black')
 plt.plot(df_out['LE_CIMIS'][4319:(4319+48)], label = 'LE', color = 'blue')
 plt.plot(df_out['H_CIMIS'][4319:(4319+48)],label = 'H', color = 'red')
 plt.plot(df_out['G'][4319:(4319+48)], label = 'G', color = 'brown')
